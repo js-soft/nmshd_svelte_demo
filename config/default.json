@@ -1,0 +1,7 @@
+{
+  "connector": {
+    "name": "Login Demo Connector",
+    "url": "http://connector-svelte",
+    "apiKey": "xxx"
+  }
+}

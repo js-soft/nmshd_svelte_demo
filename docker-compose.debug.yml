@@ -1,0 +1,63 @@
+version: "3.7"
+
+services:
+  sveltekit:
+    build:
+      dockerfile: Dockerfile.debug
+      context: .
+    entrypoint: npm run dev -- --host
+    container_name: sveltekit
+    ports:
+      - 5173:5173
+    volumes:
+      - ./:/usr/app/
+    restart: always
+        
+  postgres:
+    container_name: postgres-svelte
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+
+  keycloak:
+    container_name: keycloak-svelte
+    image: quay.io/keycloak/keycloak:20.0
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: Pa55w0rd
+    volumes:
+      - ./config/keycloak.conf:/opt/keycloak/conf/keycloak.conf:ro
+      - ./custom/:/opt/keycloak/themes/custom/
+    command: start-dev
+    ports:
+      - 8080:8080
+    depends_on:
+      - postgres
+
+  connector:
+    container_name: connector-svelte
+    image: ghcr.io/nmshd/connector:3.2.3
+    environment:
+      CUSTOM_CONFIG_LOCATION: "/config.json"
+    volumes:
+      - ./config/connector-config.json:/config.json:RO
+    depends_on:
+      - mongodb
+
+  mongodb:
+    container_name: mongodb-svelte
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - svelte_mongo_data:/data/db
+
+volumes:
+  svelte_mongo_data:
+  postgres_data:
+
