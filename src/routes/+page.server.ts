@@ -1,5 +1,5 @@
+import { invalidate_tokens, type Tokens } from "$lib/auth";
 import { redirect, type Actions } from "@sveltejs/kit";
-import axios from "axios";
 import LZString from "lz-string";
 
 export const actions: Actions = {
@@ -8,23 +8,8 @@ export const actions: Actions = {
 		if (!cookie) {
 			redirect(302, "/");
 		}
-		const tokens = JSON.parse(LZString.decompressFromBase64(cookie));
-		// revoke access_token 
-		const urlencoded = new URLSearchParams();
-		urlencoded.append("client_id", "users");
-		urlencoded.append("token", tokens.access_token);
-		urlencoded.append("token_type_hint", "access_token");
-		await axios.post(
-			`http://localhost:8080/realms/master/protocol/openid-connect/revoke`,
-			urlencoded
-		);
-		// revoke refresh_token
-		urlencoded.set("token", tokens.refresh_token);
-		urlencoded.set("token_type_hint", "refresh_token");
-		await axios.post(
-			`http://localhost:8080/realms/master/protocol/openid-connect/revoke`,
-			urlencoded
-		);
+		const tokens: Tokens = JSON.parse(LZString.decompressFromBase64(cookie));
+		await invalidate_tokens(tokens.access_token, tokens.refresh_token);
 
 		cookies.delete('mein-keks', { path: "/" });
 		redirect(302, "/");
