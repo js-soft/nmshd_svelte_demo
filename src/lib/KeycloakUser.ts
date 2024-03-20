@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface KeycloakUser {
+	id: string;
 	preferred_username: string;
 	email_verified: boolean;
 	email: string;

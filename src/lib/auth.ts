@@ -27,8 +27,8 @@ export async function validata_token(token: string): Promise<KeycloakUserWithRol
 			return undefined;
 		}
 		const user_data: KeycloakUserWithRoles =
-			(({ preferred_username, email_verified, email, given_name, family_name, realm_access }) =>
-				({ preferred_username, email_verified, email, given_name, family_name, realm_access }))(jwtDecode(token));
+			(({ id, preferred_username, email_verified, email, given_name, family_name, realm_access }) =>
+				({ id, preferred_username, email_verified, email, given_name, family_name, realm_access }))(jwtDecode(token));
 		return user_data;
 	} catch (e) {
 		return undefined;

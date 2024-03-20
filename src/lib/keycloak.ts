@@ -53,6 +53,6 @@ export async function getUser(userName: string): Promise<KeycloakUserWithRoles |
 	);
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	user.roles = roleMappingResponse.data.map((el: any) => el.name);
+	user.realm_access.roles = roleMappingResponse.data.map((el: any) => el.name);
 	return user;
 }

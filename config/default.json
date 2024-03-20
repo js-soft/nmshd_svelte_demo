@@ -7,7 +7,7 @@
   "keycloak": {  
 	"client": "users",
 	"baseUrl": "http://keycloak:8080",
-	"realm": "master",
+	"realm": "demo",
 	"admin": {
 		"username": "admin",
 		"password": "Pa55w0rd"
