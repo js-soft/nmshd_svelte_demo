@@ -3,8 +3,13 @@
 	import '../app.postcss';
 	import Navbar from '$components/navbar.svelte';
 	import type { PageData } from './$types';
+	import { onMount } from 'svelte';
+	import { io } from '$lib/socket';
 
 	export let data: PageData;
+	onMount(() => {
+		io.connect();
+	});
 </script>
 
 <AppShell slotSidebarLeft="bg-surface-50-900-token lg:w-auto" slotFooter="bg-black p-4">

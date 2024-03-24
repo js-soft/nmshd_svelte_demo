@@ -44,7 +44,7 @@ services:
     environment:
       CUSTOM_CONFIG_LOCATION: "/config.json"
     volumes:
-      - ./config/connector-config.json:/config.json:RO
+      - ./config/connector.json:/config.json:RO
     depends_on:
       - mongodb
 

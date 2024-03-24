@@ -1,7 +1,7 @@
 .DS_Store
 node_modules
 /build
-/config/connector-config.json
+/config/connector.json
 /.svelte-kit
 /package
 .env

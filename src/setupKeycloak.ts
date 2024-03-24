@@ -196,7 +196,6 @@ async function checkPermissions(token: string): Promise<string | undefined> {
 	const clientResponse = await axios.get(`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/clients`, {
 		headers: { authorization: `Bearer ${token}` }
 	});
-	console.log(clientResponse);
 	const client = clientResponse.data.filter((el: any) => {
 		return el.clientId === keycloakClient;
 	})[0];

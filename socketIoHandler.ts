@@ -6,7 +6,7 @@ export default function injectSocketIO(server: any) {
 	const io = new Server(server);
 
 	io.on('connection', (socket) => {
-		console.log('connection established');
+		console.log(socket.request.headers.cookie);
 		socket.emit('test', 'test');
 	});
 

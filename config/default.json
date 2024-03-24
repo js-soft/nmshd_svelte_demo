@@ -1,6 +1,6 @@
 {
   "connector": {
-    "name": "Login Demo Connector",
+    "name": "Enmeshed Demo",
     "url": "http://connector-svelte",
     "apiKey": "xxx"
   },

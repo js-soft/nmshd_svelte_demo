@@ -4,6 +4,10 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import LZString from "lz-string";
 
 export const handle: Handle = async ({ event, resolve }) => {
+	const sId = event.cookies.get('identifier');
+	if (!sId) {
+		event.cookies.set('identifier', crypto.randomUUID(), { path: "/" });
+	}
 	const cookie = event.cookies.get('mein-keks');
 	let user: KeycloakUserWithRoles | undefined = undefined;
 	if (cookie) {
