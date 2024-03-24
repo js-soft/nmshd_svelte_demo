@@ -2,7 +2,7 @@
 import retry from "async-retry";
 import axios from "axios";
 import config from "config";
-import { getAdminToken } from "./lib/keycloak";
+import { getAdminToken } from "../../src/lib/keycloak";
 const keycloakBaseUrl: string = config.get("keycloak.baseUrl");
 const keycloakRealm = config.get("keycloak.realm");
 const keycloakClient = config.get("keycloak.client");

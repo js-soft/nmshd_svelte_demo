@@ -1,4 +1,4 @@
-import { setupKeycloak } from "./src/setupKeycloak";
+import { setupKeycloak } from "./setupKeycloak";
 
 export default async function keycloakSetup() {
 	await setupKeycloak();
