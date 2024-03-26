@@ -9,6 +9,9 @@
 	export let data: PageData;
 	onMount(() => {
 		io.connect();
+		io.on("failedLogin", (m) => {
+			console.log(m);
+		});
 	});
 </script>
 

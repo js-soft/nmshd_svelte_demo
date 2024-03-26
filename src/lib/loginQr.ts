@@ -28,6 +28,7 @@ export async function createLoginQRCode(
 				title: "Login",
 				metadata: {
 					webSessionId: sId,
+					type: "Login",
 				},
 				onNewRelationship,
 				onExistingRelationship: {

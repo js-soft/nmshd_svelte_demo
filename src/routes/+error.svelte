@@ -1,1 +1,1 @@
-<div style="color: red">Unauthorized</div>
+<div style="color: red">Internal Server Error</div>

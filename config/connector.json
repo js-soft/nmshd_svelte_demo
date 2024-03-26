@@ -1,8 +1,8 @@
 {
   "transportLibrary": {
-    "baseUrl": "Url",
-    "platformClientId": "clientId",
-    "platformClientSecret": "ClietnSecret"
+    "baseUrl": "https://bird.enmeshed.eu",
+    "platformClientId": "dev",
+    "platformClientSecret": "SY3nxukl6Xn8kGDk52EwBKXZMR9OR5"
   },
   "database": {
     "connectionString": "mongodb://root:example@mongodb:27017/?authSource=admin&readPreference=primary&appname=DyfeCore&ssl=false",
@@ -22,11 +22,7 @@
       "enabled": true,
       "targets": {
         "website_relationship": {
-          "url": "http://website-demo:2999/api/v1/webhooks/enmeshed/relationship",
-          "headers": { "X-API-KEY": "xxx" }
-        },
-        "website_message": {
-          "url": "http://website-demo:2999/api/v1/webhooks/enmeshed/message",
+          "url": "http://sveltekit:5173/webhooks/relationship",
           "headers": { "X-API-KEY": "xxx" }
         }
       },
@@ -34,10 +30,6 @@
         {
           "triggers": ["consumption.outgoingRequestCreatedAndCompleted"],
           "target": "website_relationship"
-        },
-        {
-          "triggers": ["transport.messageReceived"],
-          "target": "website_message"
         }
       ]
     }
