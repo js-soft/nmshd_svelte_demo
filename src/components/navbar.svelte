@@ -16,6 +16,7 @@
 		{#if !user}
 			<a href="/login">Login</a>
 		{:else}
+			<a href="/auth/user">User</a>
 			<a href="/auth">Protected</a>
 			{#each demos as demo}
 				<a href="/auth/demo/{demo}">{demo} </a>

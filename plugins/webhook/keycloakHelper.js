@@ -76,6 +76,7 @@ export async function getUserRoles(userId) {
 	}} params
  */
 export async function updateUser(params) {
+	console.log(JSON.stringify(params, null, 2));
 	const adminToken = await getAdminToken();
 	const user = await getUser(params.userName);
 
@@ -97,6 +98,64 @@ export async function updateUser(params) {
 	);
 
 	return response.status;
+}
+
+export function getUserData(
+	request,
+	username
+) {
+	const retValue = {
+		userName: username,
+		attributes: {},
+		firstName: undefined,
+		lastName: undefined,
+		email: undefined
+	};
+
+	const normalKeycloakAttributes = ["Surname", "GivenName", "EMailAddress"];
+
+	const entries = request.items.slice(1);
+
+	const attr = {};
+
+	for (const entry of entries) {
+		for (const item of entry.items) {
+			if (
+				item["@type"] === "ReadAttributeAcceptResponseItem" ||
+				item["@type"] === "ProposeAttributeAcceptResponseItem"
+			) {
+				const el = (item).attribute;
+				if (el?.value) {
+					if (!attr.enmeshedAddress) {
+						Object.assign(attr, { enmeshedAddress: el.owner });
+					}
+					if (normalKeycloakAttributes.includes(el.value["@type"])) {
+						switch (el.value["@type"]) {
+							case "Surname":
+								retValue.lastName = el.value.value;
+								break;
+							case "GivenName":
+								retValue.firstName = el.value.value;
+								break;
+							case "EMailAddress":
+								retValue.email = el.value.value;
+								break;
+							default:
+								throw new Error("This is not possible");
+						}
+					} else {
+						Object.assign(attr, { [el.value["@type"]]: el.value.value });
+					}
+				}
+			}
+		}
+	}
+
+	Object.assign(retValue.attributes, attr);
+
+	console.log(retValue);
+
+	return retValue;
 }
 
 /**

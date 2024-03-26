@@ -3,7 +3,7 @@ import express from "express";
 import config from "config";
 import { ConnectorClient } from "@nmshd/connector-sdk";
 import { SOCKET_MANAGER } from "./socketManager.js";
-import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
+import { updateUser, getUser, impersonate, getUserData } from "./keycloakHelper.js";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -143,12 +143,9 @@ async function onboardingRegistration(
 
 	const socket = SOCKET_MANAGER.getSocket(sId);
 
-	const status = await updateUser({
-		userName: username,
-		attributes: {
-			enmeshedAddress: change.items[0].items[0].owner
-		}
-	});
+	const userData = getUserData(change, username);
+
+	const status = await updateUser(userData);
 
 	if (status === 204 || status === 201) {
 		const response = await CONNECTOR_CLIENT.relationships.acceptRelationshipChange(relationshipId, changeId);
