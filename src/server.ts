@@ -1,6 +1,6 @@
 import http from 'http';
 import express from 'express';
-import injectSocketIO from '../plugins/socketio/socketIoHandler.js';
+import { injectSocketIO } from '../plugins/socketio/socketIoHandler.js';
 import { handler } from '../build/handler.js';
 import { setupKeycloak } from '../plugins/keycloak/setupKeycloak.js';
 

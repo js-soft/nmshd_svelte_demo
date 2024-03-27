@@ -13,10 +13,11 @@ export async function getAdminToken(realm = keycloakRealm) {
 	const keycloakAdminConfig = config.get("keycloak.admin");
 
 	const urlencoded = new URLSearchParams();
-	urlencoded.append("client_id", "admin-cli");
+	urlencoded.append("client_id", "users");
 	urlencoded.append("username", keycloakAdminConfig.username);
 	urlencoded.append("password", keycloakAdminConfig.password);
 	urlencoded.append("grant_type", "password");
+	urlencoded.append("scope", "openid");
 
 	const response = await axios.post(`${keycloakBaseUrl}/realms/${realm}/protocol/openid-connect/token`, urlencoded);
 	const json = await response.data;
@@ -26,11 +27,10 @@ export async function getAdminToken(realm = keycloakRealm) {
 /**
 	* get user data
 	* @param {string} userName
-	* @returns {KeycloakUserWithRoles}
+	* @returns {Promise<KeycloakUserWithRoles | undefined>}
 	*/
 export async function getUser(userName) {
 	const adminToken = await getAdminToken();
-	console.log(userName);
 	const response = await axios.get(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users?exact=true&username=${userName}`,
 		{
@@ -79,6 +79,10 @@ export async function updateUser(params) {
 	console.log(JSON.stringify(params, null, 2));
 	const adminToken = await getAdminToken();
 	const user = await getUser(params.userName);
+
+	if (!user) {
+		console.log(`User ${params.userName} not found`);
+	}
 
 	const response = await axios.put(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${user.id}`,
@@ -167,12 +171,13 @@ export async function impersonate(userId) {
 	const adminToken = await getAdminToken();
 
 	const urlencoded = new URLSearchParams();
-	urlencoded.append("client_id", "admin-cli");
+	urlencoded.append("client_id", "users");
 	urlencoded.append("grant_type", "urn:ietf:params:oauth:grant-type:token-exchange");
 	urlencoded.append("subject_token", adminToken);
 	urlencoded.append("requested_token_type", "urn:ietf:params:oauth:token-type:refresh_token");
 	urlencoded.append("audience", config.get("keycloak.client"));
 	urlencoded.append("requested_subject", userId);
+	urlencoded.append("scope", "openid");
 
 	const response = await axios.post(
 		`${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`,
@@ -182,5 +187,5 @@ export async function impersonate(userId) {
 		}
 	);
 
-	return response.data;
+	return { access_token: response.data.access_token, refresh_token: response.data.refresh_token };
 }

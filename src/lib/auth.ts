@@ -19,7 +19,7 @@ export interface Tokens {
 	refresh_token: string
 }
 
-export async function validata_token(token: string): Promise<KeycloakUserWithRoles | undefined> {
+export async function validate_token(token: string): Promise<KeycloakUserWithRoles | undefined> {
 	try {
 		const validation_response = await axios.get(`${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/userinfo`,
 			{ headers: { Authorization: `bearer ${token}` } });

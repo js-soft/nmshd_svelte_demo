@@ -1,8 +1,12 @@
-// socketIoHandler.js
 import { Server } from 'socket.io';
-import { SOCKET_MANAGER } from '../webhook/socketManager.js';
+import { SOCKET_MANAGER } from '../socketManager.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import http from "http";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+/**
+ * inject the socket handler into the express app
+ * @param {http.Server} server
+ */
 export function injectSocketIO(server) {
 	const io = new Server(server);
 
@@ -21,17 +25,23 @@ export function injectSocketIO(server) {
 	console.log('SocketIO injected');
 }
 
+/**
+ * inject the socket handler into the express app
+ * @param {string} sessionName
+ * @param {http.IncomingMessage} req
+ */
 function extractSessionId(sessionName, req) {
 	const cookieString = req.headers.cookie;
 	if (!cookieString) return undefined;
 	const pairs = cookieString.split(";");
 	const splittedPairs = pairs.map((cookie) => cookie.split("="));
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	const cookieObj = splittedPairs.reduce(function(obj, cookie) {
+		// @ts-expect-error index with string
 		obj[decodeURIComponent(cookie[0].trim())] = decodeURIComponent(cookie[1].trim());
 		return obj;
 	}, {});
 
+	// @ts-expect-error index with string
 	return cookieObj[sessionName];
 } 

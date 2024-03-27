@@ -4,9 +4,7 @@
 
 	export let user: KeycloakUserWithRoles | undefined;
 
-	const demos: string[] = ['bildung', 'hcm'].filter((route) =>
-		user?.realm_access.roles.includes(route)
-	);
+	$: demos = ['bildung', 'hcm'].filter((route) => user?.realm_access.roles.includes(route));
 </script>
 
 <AppBar>

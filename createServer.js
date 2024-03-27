@@ -1,7 +1,7 @@
 import http from 'http';
 import express from 'express'
 import { createServer as createViteServer } from 'vite'
-import { injectWebhookHandlers } from "./plugins/webhook/webhookHandlers.js"
+import { injectWebhookHandlers } from "./plugins/webhook/webhookHandlers.js";
 import { injectSocketIO } from './plugins/socketio/socketIoHandler.js';
 
 async function createServer() {
@@ -26,4 +26,4 @@ async function createServer() {
 	server.listen(5173, () => console.log('Example app is listening on port 5173.'));
 }
 
-createServer()
+await createServer()

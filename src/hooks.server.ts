@@ -1,5 +1,5 @@
 import type { KeycloakUserWithRoles } from '$lib/KeycloakUser';
-import { refresh_token, validata_token as validate_token, type Tokens } from '$lib/auth';
+import { refresh_token, validate_token, type Tokens } from '$lib/auth';
 import { redirect, type Handle } from '@sveltejs/kit';
 import LZString from "lz-string";
 

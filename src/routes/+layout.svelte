@@ -5,12 +5,28 @@
 	import type { PageData } from './$types';
 	import { onMount } from 'svelte';
 	import { io } from '$lib/socket';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	export let data: PageData;
 	onMount(() => {
 		io.connect();
-		io.on("failedLogin", (m) => {
+		io.on('failedLogin', (m) => {
 			console.log(m);
+		});
+		io.on('login', async (m) => {
+			const redirect = $page.url.searchParams.get('redirectTo');
+			let res = await fetch(`/login?${redirect ? 'redirectTo=' + redirect : ''}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'text/plain'
+				},
+				redirect: 'follow',
+				body: m
+			});
+			if (res.redirected) {
+				await goto(res.url, { invalidateAll: true });
+			}
 		});
 	});
 </script>

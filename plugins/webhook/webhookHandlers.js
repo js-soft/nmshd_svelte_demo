@@ -1,9 +1,10 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import express from "express";
 import config from "config";
+import LZString from "lz-string";
 import { ConnectorClient } from "@nmshd/connector-sdk";
-import { SOCKET_MANAGER } from "./socketManager.js";
-import { updateUser, getUser, impersonate, getUserData } from "./keycloakHelper.js";
+import { SOCKET_MANAGER } from "../socketManager.js";
+import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -48,8 +49,6 @@ async function handleEnmeshedRelationshipWebhook(req, res) {
  * @param {import("@nmshd/connector-sdk").ConnectorRequest} request
  */
 async function handleEnmeshedLogin(request) {
-	console.log(request);
-
 	if (!(request.response?.content.result === "Accepted")) {
 		return;
 	}
@@ -81,7 +80,8 @@ async function handleEnmeshedLogin(request) {
 		console.error(`Socket for SessionID: ${sessionID} not found`);
 		return;
 	}
-	socket.emit("login", tokens);
+	const compress = LZString.compressToBase64(JSON.stringify(tokens));
+	socket.emit("login", compress);
 }
 
 /**
@@ -121,12 +121,13 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
 
 	const change = request.response.content;
 
-	await onboardingRegistration(change, username, metadata, relationship.id, changeId);
+	await onboardingRegistration(change, request.peer, username, metadata, relationship.id, changeId);
 }
 
 /**
  * onboard existing account with enmeshed
  * @param {import("@nmshd/connector-sdk").ConnectorRequestResponseContent} change
+ * @param {string} peerAddr
  * @param {string} username
  * @param {any} metadata
  * @param {string} relationshipId
@@ -134,6 +135,7 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
  */
 async function onboardingRegistration(
 	change,
+	peerAddr,
 	username,
 	metadata,
 	relationshipId,
@@ -143,9 +145,12 @@ async function onboardingRegistration(
 
 	const socket = SOCKET_MANAGER.getSocket(sId);
 
-	const userData = getUserData(change, username);
-
-	const status = await updateUser(userData);
+	const status = await updateUser({
+		userName: username,
+		attributes: {
+			enmeshedAddress: peerAddr
+		}
+	});
 
 	if (status === 204 || status === 201) {
 		const response = await CONNECTOR_CLIENT.relationships.acceptRelationshipChange(relationshipId, changeId);
