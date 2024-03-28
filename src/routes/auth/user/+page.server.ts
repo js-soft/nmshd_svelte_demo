@@ -8,6 +8,7 @@ export const load: PageServerLoad = async (event) => {
 	const sId = event.cookies.get('identifier');
 	const buffer = await createOnboardingQRCode(sId!, event.locals.User!.preferred_username);
 	return {
+		user: event.locals.User,
 		buffer: arrayBufferToStringArray(buffer)
 	};
 };

@@ -1,7 +1,5 @@
 import axios from "axios";
 import config from "config";
-import { jwtDecode } from "jwt-decode";
-import type { KeycloakUserWithRoles } from "./KeycloakUser";
 const keycloakBaseUrl = config.get("keycloak.baseUrl");
 const keycloakRealm = config.get("keycloak.realm");
 const keycloakClient = config.get("keycloak.client") as string;
@@ -11,6 +9,8 @@ export interface UserData {
 	given_name: string,
 	family_name: string,
 	email_verified: boolean,
+	enmeshed_address?: string[],
+	roles?: string[],
 	email?: string
 }
 
@@ -19,17 +19,14 @@ export interface Tokens {
 	refresh_token: string
 }
 
-export async function validate_token(token: string): Promise<KeycloakUserWithRoles | undefined> {
+export async function validate_token(token: string): Promise<UserData | undefined> {
 	try {
 		const validation_response = await axios.get(`${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/userinfo`,
 			{ headers: { Authorization: `bearer ${token}` } });
 		if (validation_response.status != 200) {
 			return undefined;
 		}
-		const user_data: KeycloakUserWithRoles =
-			(({ id, preferred_username, email_verified, email, given_name, family_name, realm_access }) =>
-				({ id, preferred_username, email_verified, email, given_name, family_name, realm_access }))(jwtDecode(token));
-		return user_data;
+		return validation_response.data;
 	} catch (e) {
 		return undefined;
 	}

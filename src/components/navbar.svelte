@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { KeycloakUserWithRoles } from '$lib/KeycloakUser';
+	import type { UserData } from '$lib/auth';
 	import { AppBar, LightSwitch } from '@skeletonlabs/skeleton';
 
-	export let user: KeycloakUserWithRoles | undefined;
+	export let user: UserData | undefined;
 
-	$: demos = ['bildung', 'hcm'].filter((route) => user?.realm_access.roles.includes(route));
+	$: demos = ['bildung', 'hcm'].filter((route) => user?.roles?.includes(route));
 </script>
 
 <AppBar>
