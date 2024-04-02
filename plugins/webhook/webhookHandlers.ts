@@ -2,7 +2,7 @@
 import express from "express";
 import config from "config";
 import LZString from "lz-string";
-import { ConnectorClient } from "@nmshd/connector-sdk";
+import { ConnectorClient, ConnectorRequest, ConnectorRequestContentItemGroup, ConnectorRequestResponseContent, CreateAttributeRequestItem } from "@nmshd/connector-sdk";
 import { SOCKET_MANAGER } from "../socketManager.js";
 import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
 
@@ -11,20 +11,11 @@ const CONNECTOR_CLIENT = ConnectorClient.create({
 	apiKey: config.get("connector.apiKey")
 });
 
-/**
- * inject the webhook handler into the express app
- * @param {express.Express} app 
- */
-export async function injectWebhookHandlers(app) {
+export async function injectWebhookHandlers(app: express.Express) {
 	app.post("/webhooks/relationship", handleEnmeshedRelationshipWebhook);
 }
 
-/**
- * the webhook handler
- * @param {express.Request} req
- * @param {express.Response} res
- */
-async function handleEnmeshedRelationshipWebhook(req, res) {
+async function handleEnmeshedRelationshipWebhook(req: express.Request, res: express.Response) {
 	if (req.headers["x-api-key"] !== config.get("connector.apiKey")) {
 		return res.sendStatus(401);
 	}
@@ -44,20 +35,16 @@ async function handleEnmeshedRelationshipWebhook(req, res) {
 	await handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceType(request);
 }
 
-/**
- * handle login request
- * @param {import("@nmshd/connector-sdk").ConnectorRequest} request
- */
-async function handleEnmeshedLogin(request) {
+async function handleEnmeshedLogin(request: ConnectorRequest) {
 	if (!(request.response?.content.result === "Accepted")) {
 		return;
 	}
 
-	if (!request.content.metadata || !request.content.metadata.webSessionId) {
+	if (!request.content.metadata || !request.content.metadata["webSessionId"]) {
 		return
 	}
 
-	const sessionID = request.content.metadata.webSessionId;
+	const sessionID = request.content.metadata["webSessionId"];
 
 	const peer = request.peer;
 
@@ -71,10 +58,10 @@ async function handleEnmeshedLogin(request) {
 		return;
 	}
 
-	const nmshdUser = relationship.result[0].content.value.value;
+	const nmshdUser = relationship.result[0].content.value.value as string;
 
 	const user = await getUser(nmshdUser);
-	const tokens = await impersonate(user.id);
+	const tokens = await impersonate(user!.id);
 	const socket = SOCKET_MANAGER.getSocket(sessionID);
 	if (!socket) {
 		console.error(`Socket for SessionID: ${sessionID} not found`);
@@ -84,21 +71,26 @@ async function handleEnmeshedLogin(request) {
 	socket.emit("login", compress);
 }
 
-/**
- * Represents a book.
- * @param {import("@nmshd/connector-sdk").ConnectorRequest} request
- */
-async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceType(request) {
-	const changeId = request.response.source.reference;
+async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceType(request: ConnectorRequest) {
+	const changeId = request.response!.source!.reference;
 
-	const templateId = request.source.reference;
+	const templateId = request.source!.reference;
 
-	const relationship = (await CONNECTOR_CLIENT.relationships.getRelationships({ template: { id: templateId } }))
+	const relationship = (await CONNECTOR_CLIENT.relationships.getRelationships({ templateId }))
 		.result[0];
 
 	const template = (await CONNECTOR_CLIENT.relationshipTemplates.getRelationshipTemplate(templateId)).result;
 
-	const metadata = template.content.metadata;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const metadata: any = (
+		template.content as {
+			"@type": "RelationshipTemplateContent";
+			title?: string;
+			metadata?: object;
+			onNewRelationship: ConnectorRequest;
+			onExistingRelationship?: ConnectorRequest;
+		}
+	).metadata!;
 
 	if (metadata.type !== "Onboarding") {
 		const sId = metadata.webSessionId;
@@ -115,31 +107,23 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
 		return await CONNECTOR_CLIENT.relationships.rejectRelationshipChange(relationship.id, changeId);
 	}
 
-	const itemGroup = request.content.items[0];
+	const itemGroup = request.content.items[0] as ConnectorRequestContentItemGroup;
 
-	const username = itemGroup.items[1].attribute.value.value;
+	const username = (itemGroup.items[1] as CreateAttributeRequestItem).attribute.value.value as string;
 
-	const change = request.response.content;
+	const change = request.response!.content;
 
 	await onboardingRegistration(change, request.peer, username, metadata, relationship.id, changeId);
 }
 
-/**
- * onboard existing account with enmeshed
- * @param {import("@nmshd/connector-sdk").ConnectorRequestResponseContent} change
- * @param {string} peerAddr
- * @param {string} username
- * @param {any} metadata
- * @param {string} relationshipId
- * @param {string} changeId 
- */
 async function onboardingRegistration(
-	change,
-	peerAddr,
-	username,
-	metadata,
-	relationshipId,
-	changeId
+	change: ConnectorRequestResponseContent,
+	peerAddr: string,
+	username: string,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	metadata: any,
+	relationshipId: string,
+	changeId: string
 ) {
 	const sId = metadata.webSessionId;
 
@@ -156,7 +140,7 @@ async function onboardingRegistration(
 		const response = await CONNECTOR_CLIENT.relationships.acceptRelationshipChange(relationshipId, changeId);
 		if (response.isSuccess) {
 			const user = await getUser(username);
-			const keycloakTokens = await impersonate(user.id);
+			const keycloakTokens = await impersonate(user!.id);
 
 			if (socket) {
 				socket.emit("onboard", keycloakTokens);

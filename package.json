@@ -5,7 +5,7 @@
 	"scripts": {
 		"up": "docker compose -f docker-compose.debug.yml up -d",
 		"down": "docker compose -f docker-compose.debug.yml down",
-		"dev": "node createServer.js",
+		"dev": "bun createServer.ts",
 		"build": "vite build",
 		"preview": "vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

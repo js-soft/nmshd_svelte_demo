@@ -1,7 +1,9 @@
-FROM node:lts
+FROM oven/bun:latest
 
 WORKDIR /usr/app
 
 ENV NODE_CONFIG_ENV=development
 
-RUN npm i -g npm
+COPY ./package.json .
+
+RUN bun install

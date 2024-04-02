@@ -3,11 +3,7 @@ import { SOCKET_MANAGER } from '../socketManager.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import http from "http";
 
-/**
- * inject the socket handler into the express app
- * @param {http.Server} server
- */
-export function injectSocketIO(server) {
+export function injectSocketIO(server: http.Server) {
 	const io = new Server(server);
 
 	io.on('connection', (socket) => {
@@ -25,23 +21,16 @@ export function injectSocketIO(server) {
 	console.log('SocketIO injected');
 }
 
-/**
- * inject the socket handler into the express app
- * @param {string} sessionName
- * @param {http.IncomingMessage} req
- */
-function extractSessionId(sessionName, req) {
+function extractSessionId(sessionName: string, req: http.IncomingMessage) {
 	const cookieString = req.headers.cookie;
 	if (!cookieString) return undefined;
 	const pairs = cookieString.split(";");
 	const splittedPairs = pairs.map((cookie) => cookie.split("="));
 
 	const cookieObj = splittedPairs.reduce(function(obj, cookie) {
-		// @ts-expect-error index with string
 		obj[decodeURIComponent(cookie[0].trim())] = decodeURIComponent(cookie[1].trim());
 		return obj;
 	}, {});
 
-	// @ts-expect-error index with string
 	return cookieObj[sessionName];
 } 

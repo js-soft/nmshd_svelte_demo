@@ -5,7 +5,7 @@ services:
     build:
       dockerfile: Dockerfile.debug
       context: .
-    entrypoint: npm run dev -- --host
+    entrypoint: bun run dev -- --host
     container_name: sveltekit
     ports:
       - 5173:5173
