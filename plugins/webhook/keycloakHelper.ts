@@ -61,7 +61,6 @@ export async function updateUser(params: {
 	email?: string;
 	attributes?: Record<string, string>;
 }) {
-	console.log(JSON.stringify(params, null, 2));
 	const adminToken = await getAdminToken();
 	const user = await getUser(params.userName);
 

@@ -5,7 +5,6 @@ import LZString from "lz-string";
 import { ConnectorClient, ConnectorRequest, ConnectorRequestContentItemGroup, ConnectorRequestResponseContent, CreateAttributeRequestItem } from "@nmshd/connector-sdk";
 import { SOCKET_MANAGER } from "../socketManager.js";
 import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
-import { handleKeycloakWebhook } from "./keycloakWebhook.js";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -14,7 +13,6 @@ const CONNECTOR_CLIENT = ConnectorClient.create({
 
 export async function injectWebhookHandlers(app: express.Express) {
 	app.post("/webhooks/relationship", handleEnmeshedRelationshipWebhook);
-	app.post("/webhooks/keycloak", handleKeycloakWebhook);
 }
 
 async function handleEnmeshedRelationshipWebhook(req: express.Request, res: express.Response) {
@@ -83,7 +81,10 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
 
 	const templateId = request.source!.reference;
 
-	const relationship = (await CONNECTOR_CLIENT.relationships.getRelationships({ templateId }))
+	console.log(templateId);
+
+	// @ts-expect-error broken api
+	const relationship = (await CONNECTOR_CLIENT.relationships.getRelationships({ template: { id: templateId } }))
 		.result[0];
 
 	const template = (await CONNECTOR_CLIENT.relationshipTemplates.getRelationshipTemplate(templateId)).result;
@@ -139,7 +140,7 @@ async function onboardingRegistration(
 	const status = await updateUser({
 		userName: username,
 		attributes: {
-			enmeshedAddress: peerAddr
+			enmeshed_address: peerAddr
 		}
 	});
 
