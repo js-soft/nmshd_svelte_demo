@@ -5,6 +5,7 @@ import LZString from "lz-string";
 import { ConnectorClient, ConnectorRequest, ConnectorRequestContentItemGroup, ConnectorRequestResponseContent, CreateAttributeRequestItem } from "@nmshd/connector-sdk";
 import { SOCKET_MANAGER } from "../socketManager.js";
 import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
+import { handleKeycloakWebhook } from "./keycloakWebhook.js";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -13,6 +14,7 @@ const CONNECTOR_CLIENT = ConnectorClient.create({
 
 export async function injectWebhookHandlers(app: express.Express) {
 	app.post("/webhooks/relationship", handleEnmeshedRelationshipWebhook);
+	app.post("/webhooks/keycloak", handleKeycloakWebhook);
 }
 
 async function handleEnmeshedRelationshipWebhook(req: express.Request, res: express.Response) {
@@ -61,6 +63,11 @@ async function handleEnmeshedLogin(request: ConnectorRequest) {
 	const nmshdUser = relationship.result[0].content.value.value as string;
 
 	const user = await getUser(nmshdUser);
+	const addrs = user?.attributes["enmeshed_address"] as string[];
+	if (!addrs.includes(peer)) {
+		console.error(`The user indicated by the wallet is not connected to keycloak`);
+		return;
+	}
 	const tokens = await impersonate(user!.id);
 	const socket = SOCKET_MANAGER.getSocket(sessionID);
 	if (!socket) {
@@ -117,7 +124,7 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
 }
 
 async function onboardingRegistration(
-	change: ConnectorRequestResponseContent,
+	_change: ConnectorRequestResponseContent,
 	peerAddr: string,
 	username: string,
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

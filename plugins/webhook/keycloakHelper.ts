@@ -1,6 +1,6 @@
 import axios from "axios";
 import config from "config";
-import { type KeycloakUserWithRoles } from "../../src/lib/KeycloakUser";
+import { type KeycloakUser } from "../../src/lib/KeycloakUser";
 import { type Tokens } from "../../src/lib/auth";
 
 const keycloakBaseUrl: string = config.get("keycloak.baseUrl");
@@ -21,7 +21,7 @@ export async function getAdminToken(realm = keycloakRealm): Promise<string> {
 	return json.access_token;
 }
 
-export async function getUser(userName: string): Promise<KeycloakUserWithRoles | undefined> {
+export async function getUser(userName: string): Promise<KeycloakUser | undefined> {
 	const adminToken = await getAdminToken();
 	const response = await axios.get(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users?exact=true&username=${userName}`,

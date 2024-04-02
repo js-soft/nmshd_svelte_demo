@@ -1,7 +1,7 @@
 import axios from "axios";
 import config from "config";
 import { type Tokens } from "./auth";
-import type { KeycloakUserWithRoles } from "./KeycloakUser";
+import type { KeycloakUser } from "./KeycloakUser";
 
 const keycloakBaseUrl = config.get("keycloak.baseUrl");
 const keycloakRealm = config.get("keycloak.realm");
@@ -35,7 +35,7 @@ export async function login(userName: string, password: string): Promise<Tokens>
 	return { access_token: response.data.access_token, refresh_token: response.data.refresh_token };
 }
 
-export async function getUser(userName: string): Promise<KeycloakUserWithRoles | undefined> {
+export async function getUser(userName: string): Promise<KeycloakUser | undefined> {
 	const adminToken = await getAdminToken();
 	const response = await axios.get(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users?exact=true&username=${userName}`,
@@ -43,7 +43,7 @@ export async function getUser(userName: string): Promise<KeycloakUserWithRoles |
 			headers: { authorization: `Bearer ${adminToken}` }
 		}
 	);
-	const user: KeycloakUserWithRoles | undefined = response.data[0];
+	const user: KeycloakUser | undefined = response.data[0];
 	if (!user) return;
 	const roleMappingResponse = await axios.get(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${user.id}/role-mappings/realm`,
