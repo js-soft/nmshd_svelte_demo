@@ -3,6 +3,7 @@ import type { Config } from 'tailwindcss'
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
 import { skeleton } from '@skeletonlabs/tw-plugin'
+import { enmeshedTheme } from './enmeshedTheme';
 
 const config = {
 	// 2. Opt for dark mode to be handled via the class method
@@ -23,6 +24,9 @@ const config = {
 		typography,
 		skeleton({
 			themes: {
+				custom: [
+					enmeshedTheme
+				],
 				preset: [
 					{
 						name: 'skeleton',
