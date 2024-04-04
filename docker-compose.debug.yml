@@ -40,7 +40,7 @@ services:
 
   connector:
     container_name: connector-svelte
-    image: ghcr.io/nmshd/connector:3.2.3
+    image: ghcr.io/nmshd/connector:3.9.3
     environment:
       CUSTOM_CONFIG_LOCATION: "/config.json"
     volumes:
