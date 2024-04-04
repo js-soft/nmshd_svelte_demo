@@ -3,8 +3,10 @@ import express from "express";
 import config from "config";
 import LZString from "lz-string";
 import { ConnectorClient, ConnectorRequest, ConnectorRequestContentItemGroup, ConnectorRequestResponseContent, CreateAttributeRequestItem } from "@nmshd/connector-sdk";
-import { SOCKET_MANAGER } from "../socketManager.js";
-import { updateUser, getUser, impersonate } from "./keycloakHelper.js";
+import { SOCKET_MANAGER } from "../socketManager";
+import { storeEnmeshedAddress, impersonate } from "./keycloakHelper";
+import { getUser } from "../../src/lib/keycloak";
+import { Session } from "inspector";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -20,15 +22,26 @@ async function handleEnmeshedRelationshipWebhook(req: express.Request, res: expr
 		return res.sendStatus(401);
 	}
 	res.sendStatus(200);
+	const body: { trigger: string; data: ConnectorRequest } | undefined = req.body;
 
-	if (!req.body.trigger) return;
+	if (!body) return;
 
-	const request = req.body.data;
+	const request = body.data;
 
-	const respnseSourceType = request.response.source.type;
+	const respnseSourceType = request.response!.source!.type;
 
 	if (respnseSourceType === "Message") {
-		await handleEnmeshedLogin(request);
+		const reqType: string = request.content.metadata!["type"]
+		switch (reqType) {
+			case "Login":
+				await handleEnmeshedLogin(request);
+				break;
+			case "Onboarding":
+				await handleOnboardingMessage(request);
+				break;
+			default:
+				console.error("received unknown message type");
+		}
 		return;
 	}
 
@@ -45,33 +58,51 @@ async function handleEnmeshedLogin(request: ConnectorRequest) {
 	}
 
 	const sessionID = request.content.metadata["webSessionId"];
+	const socket = SOCKET_MANAGER.getSocket(sessionID);
+	// The session in question allready disconnected so we abort
+	if (!socket) {
+		return;
+	}
 
 	const peer = request.peer;
 
-	const relationship = await CONNECTOR_CLIENT.attributes.getAttributes({
+	const attributes = await CONNECTOR_CLIENT.attributes.getAttributes({
 		content: { key: "userName" },
 		shareInfo: { peer: peer }
 	});
 
-	if (relationship.isError) {
+	if (attributes.isError) {
 		console.error("User not found!");
 		return;
 	}
 
-	const nmshdUser = relationship.result[0].content.value.value as string;
+	const nonSucceededAttributes = attributes.result.filter((el) => !el.succeededBy)
+	const nmshdUserAttr = nonSucceededAttributes[0];
+	const nmshdUser = nmshdUserAttr.content.value.value as string;
 
 	const user = await getUser(nmshdUser);
+	if (!user) {
+		socket.emit("login_error", "it seems that you are not onboarded to any account");
+		console.error(`It `);
+		return;
+	}
 	const addrs = user?.attributes["enmeshed_address"] as string[];
 	if (!addrs.includes(peer)) {
-		console.error(`The user indicated by the wallet is not connected to keycloak`);
+		socket.emit("login_error",
+			"it seems that the user you reference no longer has a reference to your account in keycloak updating your attributes now");
+		await CONNECTOR_CLIENT.attributes.succeedAttribute(nmshdUserAttr.id, {
+			successorContent: {
+				value: {
+					"@type": "ProprietaryString",
+					title: `${config.get("connector.name")}.userName`,
+					value: ''
+				}
+			}
+		})
+		await CONNECTOR_CLIENT.attributes.notifyPeerAboutRepositoryAttributeSuccession(nmshdUserAttr.id, { peer: nmshdUserAttr.shareInfo!.peer });
 		return;
 	}
 	const tokens = await impersonate(user!.id);
-	const socket = SOCKET_MANAGER.getSocket(sessionID);
-	if (!socket) {
-		console.error(`Socket for SessionID: ${sessionID} not found`);
-		return;
-	}
 	const compress = LZString.compressToBase64(JSON.stringify(tokens));
 	socket.emit("login", compress);
 }
@@ -80,8 +111,6 @@ async function handleEnmeshedRelationshipWebhookWithRelationshipResponseSourceTy
 	const changeId = request.response!.source!.reference;
 
 	const templateId = request.source!.reference;
-
-	console.log(templateId);
 
 	// @ts-expect-error broken api
 	const relationship = (await CONNECTOR_CLIENT.relationships.getRelationships({ template: { id: templateId } }))
@@ -128,8 +157,7 @@ async function onboardingRegistration(
 	_change: ConnectorRequestResponseContent,
 	peerAddr: string,
 	username: string,
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	metadata: any,
+	metadata: Record<string, string>,
 	relationshipId: string,
 	changeId: string
 ) {
@@ -137,26 +165,78 @@ async function onboardingRegistration(
 
 	const socket = SOCKET_MANAGER.getSocket(sId);
 
-	const status = await updateUser({
-		userName: username,
-		attributes: {
-			enmeshed_address: peerAddr
-		}
-	});
+	try {
+		const status = await storeEnmeshedAddress(
+			username,
+			peerAddr
+		);
 
-	if (status === 204 || status === 201) {
-		const response = await CONNECTOR_CLIENT.relationships.acceptRelationshipChange(relationshipId, changeId);
-		if (response.isSuccess) {
-			const user = await getUser(username);
-			const keycloakTokens = await impersonate(user!.id);
-
-			if (socket) {
-				socket.emit("onboard", keycloakTokens);
-			} else {
-				console.log("could not find socket");
+		if (status === 204 || status === 201) {
+			const response = await CONNECTOR_CLIENT.relationships.acceptRelationshipChange(relationshipId, changeId);
+			if (response.isSuccess) {
+				if (socket) {
+					socket.emit("onboard", peerAddr);
+				} else {
+					console.log("could not find socket");
+				}
 			}
+		} else {
+			await CONNECTOR_CLIENT.relationships.rejectRelationshipChange(relationshipId, changeId);
 		}
-	} else {
+	} catch (e) {
+		console.log(e);
 		await CONNECTOR_CLIENT.relationships.rejectRelationshipChange(relationshipId, changeId);
+	}
+}
+async function handleOnboardingMessage(request: ConnectorRequest) {
+	if (!request.content.metadata) {
+		return;
+	}
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const metadata: any = request.content.metadata;
+	const username: string | undefined = metadata.userName;
+	const socket = SOCKET_MANAGER.getSocket(metadata.webSessionId);
+	if (!username) {
+		return;
+	}
+	const attributes = await CONNECTOR_CLIENT.attributes.getAttributes({
+		content: {
+			key: "userName"
+		},
+		shareInfo: {
+			peer: request.peer
+		},
+	})
+	if (attributes.isError || attributes.result.length === 0) {
+		return new Response(null, { status: 400 });
+	}
+	const nonSucceededAttributes = attributes.result.filter((el) => !el.succeededBy)
+
+	const userNameAttr = nonSucceededAttributes[0];
+
+	if (userNameAttr.content.value.value !== "") {
+		if (userNameAttr.content.value.value === username) {
+			socket?.emit("onboard_error", "You are allready connected to this account");
+		} else {
+			socket?.emit("onboard_error", "You are allready connected to a different account");
+		}
+		return;
+	}
+
+	const status = await storeEnmeshedAddress(
+		username,
+		request.peer
+	);
+	if (status === 204 || status === 201) {
+		await CONNECTOR_CLIENT.attributes.succeedAttribute(userNameAttr.id, {
+			successorContent: {
+				value: {
+					"@type": "ProprietaryString",
+					title: `${config.get("connector.name")}.userName`,
+					value: username
+				}
+			}
+		})
+		socket?.emit("onboard", request.peer);
 	}
 }

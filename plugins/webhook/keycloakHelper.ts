@@ -1,6 +1,6 @@
 import axios from "axios";
 import config from "config";
-import { type KeycloakUser } from "../../src/lib/KeycloakUser";
+import { getUser } from "../../src/lib/keycloak";
 import { type Tokens } from "../../src/lib/auth";
 
 const keycloakBaseUrl: string = config.get("keycloak.baseUrl");
@@ -21,27 +21,6 @@ export async function getAdminToken(realm = keycloakRealm): Promise<string> {
 	return json.access_token;
 }
 
-export async function getUser(userName: string): Promise<KeycloakUser | undefined> {
-	const adminToken = await getAdminToken();
-	const response = await axios.get(
-		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users?exact=true&username=${userName}`,
-		{
-			headers: { authorization: `Bearer ${adminToken}` }
-		}
-	);
-	const user = response.data[0];
-	if (!user) return;
-	const roleMappingResponse = await axios.get(
-		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${user.id}/role-mappings/realm`,
-		{
-			headers: { authorization: `Bearer ${adminToken}` }
-		}
-	);
-
-	user.roles = roleMappingResponse.data.map((el) => el.name);
-	return user;
-}
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getUserRoles(userId: string): Promise<any> {
 	const adminToken = await getAdminToken();
@@ -54,38 +33,41 @@ export async function getUserRoles(userId: string): Promise<any> {
 	return response.data;
 }
 
-export async function updateUser(params: {
-	userName: string;
-	vorName?: string;
-	name?: string;
-	email?: string;
-	attributes?: Record<string, string>;
-}) {
+export async function storeEnmeshedAddress(
+	userName: string,
+	address: string
+) {
 	const adminToken = await getAdminToken();
-	const user = await getUser(params.userName);
+	let updated = false;
+	let status = 400;
 
-	if (!user) {
-		console.log(`User ${params.userName} not found`);
+	let data = await getUser(userName);
+
+	while (!updated) {
+		data!.attributes.enmeshed_address.push(address);
+
+		const response = await axios.put(
+			`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${data!.id}`,
+			{
+				firstName: data?.firstName,
+				lastName: data?.lastName,
+				email: data?.email,
+				attributes: data?.attributes,
+			},
+			{
+				headers: {
+					authorization: `bearer ${adminToken}`,
+					"content-type": "application/json" // eslint-disable-line @typescript-eslint/naming-convention
+				}
+			}
+		);
+		status = response.status;
+
+		data = await getUser(userName);
+		updated = !!data?.attributes.enmeshed_address.includes(address);
 	}
 
-	const response = await axios.put(
-		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${user!.id}`,
-		{
-			username: params.userName,
-			firstName: params.vorName,
-			lastName: params.name,
-			email: params.email,
-			attributes: params.attributes,
-		},
-		{
-			headers: {
-				authorization: `bearer ${adminToken}`,
-				"content-type": "application/json" // eslint-disable-line @typescript-eslint/naming-convention
-			}
-		}
-	);
-
-	return response.status;
+	return status;
 }
 
 export async function impersonate(userId: string): Promise<Tokens> {

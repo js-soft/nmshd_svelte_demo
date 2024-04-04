@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { AppShell } from '@skeletonlabs/skeleton';
+	import { AppShell, Modal, Toast, initializeStores } from '@skeletonlabs/skeleton';
 	import '../app.postcss';
 	import Navbar from '$components/navbar.svelte';
 	import type { PageData } from './$types';
@@ -8,6 +8,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 
+	initializeStores();
 	export let data: PageData;
 	onMount(() => {
 		io.connect();
@@ -30,6 +31,9 @@
 		});
 	});
 </script>
+
+<Modal />
+<Toast />
 
 <AppShell slotSidebarLeft="bg-surface-50-900-token lg:w-auto" slotFooter="bg-black p-4">
 	<!-- Header -->

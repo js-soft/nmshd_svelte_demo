@@ -5,30 +5,16 @@ class SocketManager {
 	_sessionToSocket = new Map();
 	_socketIdToSession = new Map();
 
-	/**
-	 * returns active socket corresponding to session
-	 * @param {string} session
-	 * @returns {Socket | undefined}
-	*/
-	getSocket(session) {
+	getSocket(session: string): Socket | undefined {
 		return this._sessionToSocket.get(session);
 	}
 
-	/**
-	 * initialize socket connection
-	 * @param {string} session
-	 * @param {Socket} socket 
-	*/
-	connect(session, socket) {
+	connect(session: string, socket: Socket) {
 		this._sessionToSocket.set(session, socket);
 		this._socketIdToSession.set(socket.id, session);
 	}
 
-	/**
-	 * removes no longer needed connections
-	 * @param {Socket} socket 
-	*/
-	disconnect(socket) {
+	disconnect(socket: Socket) {
 		const ssId = this._socketIdToSession.get(socket.id);
 		if (!ssId) {
 			return

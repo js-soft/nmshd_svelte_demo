@@ -43,7 +43,7 @@ export async function getUser(userName: string): Promise<KeycloakUser | undefine
 			headers: { authorization: `Bearer ${adminToken}` }
 		}
 	);
-	const user: KeycloakUser | undefined = response.data[0];
+	const user = response.data[0];
 	if (!user) return;
 	const roleMappingResponse = await axios.get(
 		`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${user.id}/role-mappings/realm`,
@@ -53,6 +53,36 @@ export async function getUser(userName: string): Promise<KeycloakUser | undefine
 	);
 
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	user.realm_access.roles = roleMappingResponse.data.map((el: any) => el.name);
+	user.roles = roleMappingResponse.data.map((el: any) => el.name);
 	return user;
+}
+
+export async function decoupleEnmeshed(userName: string, nmshdAddr: string) {
+	const adminToken = await getAdminToken();
+	let updated = false;
+
+	let data = await getUser(userName);
+
+	while (!updated) {
+		data!.attributes.enmeshed_address = data!.attributes.enmeshed_address.filter((addr) => addr !== nmshdAddr);
+
+		await axios.put(
+			`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${data!.id}`,
+			{
+				firstName: data?.firstName,
+				lastName: data?.lastName,
+				email: data?.email,
+				attributes: data?.attributes,
+			},
+			{
+				headers: {
+					authorization: `bearer ${adminToken}`,
+					"content-type": "application/json" // eslint-disable-line @typescript-eslint/naming-convention
+				}
+			}
+		);
+
+		data = await getUser(userName);
+		updated = !data?.attributes.enmeshed_address.includes(nmshdAddr);
+	}
 }

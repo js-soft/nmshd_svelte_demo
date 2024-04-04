@@ -1,9 +1,19 @@
 <script lang="ts">
-	import { focusTrap } from '@skeletonlabs/skeleton';
+	import { focusTrap, getToastStore, type ToastSettings } from '@skeletonlabs/skeleton';
 	import type { PageData } from './$types';
+	import { io } from '$lib/socket';
 	let isFocused = true;
 
 	export let data: PageData;
+	const toastStore = getToastStore();
+
+	io.on('login_error', (msg: string) => {
+		const t: ToastSettings = {
+			message: msg,
+			timeout: 5000
+		};
+		toastStore.trigger(t);
+	});
 
 	const imageBuffer = window.btoa(data.buffer.join(''));
 </script>

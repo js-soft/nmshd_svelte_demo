@@ -61,7 +61,23 @@ export async function createOnboardingQRCode(
 					webSessionId: sId,
 					type: "Onboarding",
 				},
-				onNewRelationship
+				onNewRelationship,
+				onExistingRelationship: {
+					metadata: {
+						webSessionId: sId,
+						type: "Onboarding",
+						userName: userName
+					},
+					items: [
+						{
+							"@type": "AuthenticationRequestItem",
+							title: "Onboarding Request",
+							description: `There has been an onboarding request to the ${userName} account`,
+							mustBeAccepted: true,
+							requireManualDecision: true
+						}
+					]
+				}
 			},
 			expiresAt: "2025"
 		},
