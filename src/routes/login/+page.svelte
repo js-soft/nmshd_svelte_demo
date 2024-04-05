@@ -19,18 +19,20 @@
 </script>
 
 <div class="container w-96 mx-auto p-4 my-16">
-	<form use:focusTrap={isFocused} method="POST">
-		<label class="label my-4">
-			<span>Username</span>
-			<input class="input" name="username" type="text" placeholder="Input" />
-		</label>
+	<section class="space-y-4">
+		<form use:focusTrap={isFocused} method="POST">
+			<label class="label my-4">
+				<span>Username</span>
+				<input class="input" name="username" type="text" placeholder="Input" />
+			</label>
 
-		<label class="label my-4">
-			<span>Password</span>
-			<input class="input" name="password" type="password" placeholder="password" />
-		</label>
+			<label class="label my-4">
+				<span>Password</span>
+				<input class="input" name="password" type="password" placeholder="password" />
+			</label>
 
-		<button class="btn variant-filled">Login</button>
-	</form>
-	<img alt="QR_Code" src="data:image/png;base64,{imageBuffer}" />
+			<button class="btn variant-filled">Login</button>
+		</form>
+		<img alt="QR_Code" src="data:image/png;base64,{imageBuffer}" />
+	</section>
 </div>
