@@ -5,7 +5,7 @@ export interface KeycloakUser {
 	email: string;
 	firstName: string;
 	lastName: string;
-	attributes: Attributes;
+	attributes?: Attributes;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

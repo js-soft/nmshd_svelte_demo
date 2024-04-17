@@ -19,8 +19,9 @@
 	});
 
 	io.on('onboard', (addr: string) => {
-		data.user!.enmeshed_address?.push(addr);
-		data.user!.enmeshed_address = data.user?.enmeshed_address;
+		const addresses = data.user!.enmeshed_address ? data.user!.enmeshed_address : [];
+		addresses.push(addr);
+		data.user!.enmeshed_address = addresses;
 	});
 
 	async function trigger_delete(addr: string) {

@@ -6,7 +6,6 @@ import { ConnectorClient, ConnectorRequest, ConnectorRequestContentItemGroup, Co
 import { SOCKET_MANAGER } from "../socketManager";
 import { storeEnmeshedAddress, impersonate } from "./keycloakHelper";
 import { getUser } from "../../src/lib/keycloak";
-import { Session } from "inspector";
 
 const CONNECTOR_CLIENT = ConnectorClient.create({
 	baseUrl: config.get("connector.url"),
@@ -237,6 +236,10 @@ async function handleOnboardingMessage(request: ConnectorRequest) {
 				}
 			}
 		})
-		socket?.emit("onboard", request.peer);
+		if (socket) {
+			socket.emit("onboard", request.peer);
+		} else {
+			console.log("socket not found");
+		}
 	}
 }

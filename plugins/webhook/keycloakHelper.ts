@@ -44,7 +44,9 @@ export async function storeEnmeshedAddress(
 	let data = await getUser(userName);
 
 	while (!updated) {
-		data!.attributes.enmeshed_address.push(address);
+		const addresses = data?.attributes?.enmeshed_address ? data.attributes.enmeshed_address : [];
+
+		addresses.push(address);
 
 		const response = await axios.put(
 			`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${data!.id}`,
@@ -52,7 +54,9 @@ export async function storeEnmeshedAddress(
 				firstName: data?.firstName,
 				lastName: data?.lastName,
 				email: data?.email,
-				attributes: data?.attributes,
+				attributes: {
+					enmeshed_address: addresses
+				},
 			},
 			{
 				headers: {
@@ -64,7 +68,7 @@ export async function storeEnmeshedAddress(
 		status = response.status;
 
 		data = await getUser(userName);
-		updated = !!data?.attributes.enmeshed_address.includes(address);
+		updated = !!data?.attributes?.enmeshed_address.includes(address);
 	}
 
 	return status;

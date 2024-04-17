@@ -15,7 +15,7 @@
 		io.on('failedLogin', (m) => {
 			console.log(m);
 		});
-		io.on('login', async (m) => {
+		io.on('login', async (m: string) => {
 			const redirect = $page.url.searchParams.get('redirectTo');
 			let res = await fetch(`/login?${redirect ? 'redirectTo=' + redirect : ''}`, {
 				method: 'POST',

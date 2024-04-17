@@ -64,7 +64,8 @@ export async function decoupleEnmeshed(userName: string, nmshdAddr: string) {
 	let data = await getUser(userName);
 
 	while (!updated) {
-		data!.attributes.enmeshed_address = data!.attributes.enmeshed_address.filter((addr) => addr !== nmshdAddr);
+		let addresses = data?.attributes?.enmeshed_address ? data.attributes.enmeshed_address : [];
+		addresses = addresses.filter((addr) => addr !== nmshdAddr);
 
 		await axios.put(
 			`${keycloakBaseUrl}/admin/realms/${keycloakRealm}/users/${data!.id}`,
@@ -72,7 +73,9 @@ export async function decoupleEnmeshed(userName: string, nmshdAddr: string) {
 				firstName: data?.firstName,
 				lastName: data?.lastName,
 				email: data?.email,
-				attributes: data?.attributes,
+				attributes: {
+					enmeshed_address: addresses
+				},
 			},
 			{
 				headers: {
@@ -83,6 +86,6 @@ export async function decoupleEnmeshed(userName: string, nmshdAddr: string) {
 		);
 
 		data = await getUser(userName);
-		updated = !data?.attributes.enmeshed_address.includes(nmshdAddr);
+		updated = !data?.attributes?.enmeshed_address.includes(nmshdAddr);
 	}
 }
